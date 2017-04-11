@@ -10,11 +10,39 @@ Created on Mon Apr 10 20:01:54 2017
 
 from pylab import *
 
-def calculate_total_energy():
+def calculate_total_energy_fast():
     
     global M, size, J, i, j, E
     
+    #calculate old local energies of neighbors
     
+    l1o = calculate_local_energy(M,size,J,i,j)
+    l2o = calculate_local_energy(M,size,J,(i-1)%size,j)
+    l3o = calculate_local_energy(M,size,J,(i+1)%size,j)
+    l4o = calculate_local_energy(M,size,J,i,(j-1)%size)
+    l5o = calculate_local_energy(M,size,J,i,(j+1)%size)
+    
+    Eo = l1o + l2o + l3o + l4o + l5o 
+    
+    M[i,j] = M[i,j]*-1 #switch to new configuration
+    
+    #calculate new local energies of neighbors
+
+    l1n = calculate_local_energy(M,size,J,i,j)
+    l2n = calculate_local_energy(M,size,J,(i-1)%size,j)
+    l3n = calculate_local_energy(M,size,J,(i+1)%size,j)
+    l4n = calculate_local_energy(M,size,J,i,(j-1)%size)
+    l5n = calculate_local_energy(M,size,J,i,(j+1)%size)
+    
+    En = l1n + l2n + l3n + l4n + l5n
+    
+    #Calculate total energy
+    
+    E = E - Eo + En
+    
+    
+
+                
     
     
 
@@ -31,11 +59,11 @@ def calculate_local_energy(M, size, J, i, j):
 global M, size, J, i, j, E
 
 
-size = 5
+size = 40
 J = 1
 
 
-M = random((5,5)) #M is the matrix containing all the electron spin values
+M = random((size,size)) #M is the matrix containing all the electron spin values
 
 #set up electron spin values
 
@@ -64,7 +92,7 @@ print 'Total starting energy is %f' %(E)
 
 #step through all pixels and flip spins
 
-for time in range(1,1000):
+for time in range(1,100):
     
     for i in range(1,size):
     
@@ -83,11 +111,20 @@ for time in range(1,1000):
             if fi_le > ini_le:
                 
                 M[i,j] = M[i,j]*-1
+
+            #if the spin did change,  update total energy
+
+            else:
+                
+                M[i,j] = M[i,j]*-1 #revert just to see local old energies
+                
+                calculate_total_energy_fast() #do a quick calculation of total energy
+                
+            
             
 
 
-    #calculate total energy
-    
+    print E
     
 
             
