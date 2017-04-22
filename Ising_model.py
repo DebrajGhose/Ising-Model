@@ -37,7 +37,7 @@ avgE = [0.0]*numberofsims #average energy for given T
 
 for runnumber in range(0,numberofsims):
     
-    T = runnumber/(numberofsims+1.0)*4.0 +0.0001#pick a temperature between 0 and 4
+    T = runnumber/(numberofsims-1.0)*5.0 + 1#pick a temperature between 0 and 4
     
     snapshottime = size**2 #take snapshots that are uncorrelated
     
@@ -49,8 +49,8 @@ for runnumber in range(0,numberofsims):
     
     #set up electron spin values based on some threshhold
     
-    M[M>=0] = 1
-    M[M<0]=-1
+    M[M>=0.1] = 1
+    M[M<0.1]=-1
     
     
     #calculate total energy of the system
@@ -126,7 +126,7 @@ for runnumber in range(0,numberofsims):
     
         
 
-        if time%1000==0 and time > 5000:
+        if time%100==0 and time > 5000:
             
             #notice that these calculations happen after some burn-in has taken place
             
@@ -137,7 +137,6 @@ for runnumber in range(0,numberofsims):
             average_count = average_count + 1 #weighted average
     
     avgMag[runnumber] = abs(avgMag[runnumber])
-    print avgE[0]     
     #plt.figure(2)
     #plot(avgMag)   
     #imshow(M,interpolation = 'none')
