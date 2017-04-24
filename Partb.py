@@ -23,10 +23,13 @@ for size in sizes:
     
     count += 1
     
+    
+#do log plot
 plot(sizes,CVmax,color='#7515e1')
-
 plot(sizes,CVmax,'.',color='#1875e1')
+#plt.yscale('log')
+#plt.xscale('log')
+xlabel('n')
+ylabel('Cmax/N')
 
-plt.yscale('log')
-
-plt.xscale('log')
+savefig('partb.pdf')
