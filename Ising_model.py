@@ -17,10 +17,9 @@ def calculate_local_energy( size, J, i, j):
     
     global M
     
-    local_energy = -J*M[i,j]*(   M[(i-1)%size,j] + M[(i+1)%size,j] + M[i,(j-1)%size] + M[i,(j+1)%size]  ) 
+    local_energy = -J*M[i,j]*(   M[(i-1)%size,j] + M[(i+1)%size,j] + M[i,(j-1)%size] + M[i,(j+1)%size]  )
     
     return local_energy
-
 
     
     
@@ -28,20 +27,35 @@ def calculate_local_energy( size, J, i, j):
 
 global M
 
-size = 10 #pick a size of grid
+size = 50 #pick a size of grid
+microstates = size*size #total number of cells in the grid
+Temperatures = [ 1.5, 2.0, 2.5, 2.7, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.7, 3.8, 3.85, 3.9, 3.95, 4 , 4.05, 4.1, 4.15, 4.25, 4.3, 4.35, 4.4, 4.5, 4.6, 4.7, 4.8 , 4.9, 5.0 , 5.5, 5.7, 6, 6.5, 7, 8.0, 9.0]
 
-numberofsims = 30
+snapshottime = size**2 #start collecting data after this burn in period
+    
+numberofsims = len(Temperatures)
+
+#initialize arrays to store stuff
 
 avgMag = [0.0]*numberofsims #average magnetization for given T
 avgE = [0.0]*numberofsims #average energy for given T
+arraySH = [0.0]*numberofsims #specific heat array
+arraySus = [0.0]*numberofsims #susceptibility
+
+
+
 
 for runnumber in range(0,numberofsims):
     
-    T = runnumber/(numberofsims-1.0)*5.0 + 1#pick a temperature between 0 and 4
+    average_count = 0 #reset the average weighting for each new temperature
     
-    snapshottime = size**2 #take snapshots that are uncorrelated
     
-    average_count = 0 #reset the average weighting
+    T = Temperatures[runnumber]
+
+    print T
+
+        
+    #initialize your matrix
     
     J = 1.5
     
@@ -49,13 +63,13 @@ for runnumber in range(0,numberofsims):
     
     #set up electron spin values based on some threshhold
     
-    M[M>=0.1] = 1
-    M[M<0.1]=-1
-    
+    M[M>=0.001] = 1
+    M[M<0.001]=-1
     
     #calculate total energy of the system
     
     E = 0 #energy
+    E2 = 0 #energy squared
     
     for i in range(0,size):
         
@@ -67,13 +81,15 @@ for runnumber in range(0,numberofsims):
             
     E = E/2 #divide by 2 to account for all repeated pairs
     
-    Mag = sum(M) 
+    Mag = sum(M) #calculate magnetization
     
-    print T       
+    E2 = J**2 #mean squared energy of pairs. 2*N^2 pairs * J^2/(2*N^2 pairs)
+    
+    Mag2 = 1.0 #mean squared magnetization
     
     #step through all pixels and flip spins
     
-    for time in range(1,100000):
+    for time in range(1,snapshottime + 1000*size):
         
         #Pick out points at random and see what the local energy is. Flip the spin at the location and recalculate that energy.
         #If the flipped one has a lower energy, keep it. If it has a higher energy, flip it back with a certain probability
@@ -99,18 +115,19 @@ for runnumber in range(0,numberofsims):
         M[i,j] = -M[i,j]
         
         
-        #see if you want to keep the flipped version
+        #see if you want to keep the flip
         
         
-        if energy_change <= 0: 
+        if energy_change < 0: 
         
             #reaching a lower state will always flip spin
             
             M[i,j] = -M[i,j]
 
-            E = E + energy_change
+            E = E + energy_change #update energy
             
             Mag = Mag + 2*M[i,j] #Mag + M[i,j] - (-M[i,j])
+            
         
         
         elif exp(-energy_change/T) > rand():
@@ -119,26 +136,48 @@ for runnumber in range(0,numberofsims):
             
             M[i,j] = -M[i,j]
 
-            E = E + energy_change
+            E = E + energy_change #update energy
             
             Mag = Mag + 2*M[i,j]
           
     
         
 
-        if time%100==0 and time > 5000:
+        if time%(size)==0 and time > snapshottime:
             
             #notice that these calculations happen after some burn-in has taken place
             
-            avgE[runnumber] = (avgE[runnumber]*average_count + E)/(average_count+1)
+            avgE[runnumber] = (avgE[runnumber]*average_count + E/(2*microstates) )/(average_count+1)
             
-            avgMag[runnumber] = (avgMag[runnumber]*average_count + Mag)/(average_count+1)
+            avgMag[runnumber] = (avgMag[runnumber]*average_count + Mag/microstates)/(average_count+1)
             
             average_count = average_count + 1 #weighted average
     
-    avgMag[runnumber] = abs(avgMag[runnumber])
-    #plt.figure(2)
-    #plot(avgMag)   
-    #imshow(M,interpolation = 'none')
+    
+    
+    arraySH[runnumber] = (E2 - avgE[runnumber]**2 ) /T**2
+    arraySus[runnumber] = (Mag2 - avgMag[runnumber]**2)/T**2
+
+    avgMag[runnumber] = abs(avgMag[runnumber]) #magnetization made absolute for plotting purposes
 
 
+
+plt.figure(1)
+name1 = 'Energy' + '_' + str(size)
+plot(Temperatures,avgE,'.',color='#b08272')
+plt.xlabel('Temperature')
+
+plt.figure(2)
+name2 = 'Magnetization' + '_' + str(size)
+plot(Temperatures,avgMag,'.',color='#00a3b2')
+plt.xlabel('Temperature')
+
+plt.figure(3)
+name3 = 'CV' + '_' + str(size)
+plot(Temperatures,arraySH,'.',color='#71167a')
+plt.xlabel('Temperature')
+
+plt.figure(4)
+name4 = 'Sus' + '_' + str(size)
+plot(Temperatures,arraySus,'.',color='#da8768')
+plt.xlabel('Temperature')
